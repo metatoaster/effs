@@ -1,14 +1,19 @@
 [workspace]
 members = [
     "effs",
+    "effs-image",
 ]
 default-members = [
     "effs",
+    "effs-image",
 ]
 resolver = "2"
 
 [workspace.dependencies]
 effs = { path = "./effs", version = "0.0.1" }
+effs-image = { path = "./effs-image", version = "0.0.1" }
 
 anyhow = "1.0.0"
+fuser = "0.15.0"
+image = "0.25.4"
 thiserror = "1.0.0"
