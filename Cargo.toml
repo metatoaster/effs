@@ -1,0 +1,14 @@
+[workspace]
+members = [
+    "effs",
+]
+default-members = [
+    "effs",
+]
+resolver = "2"
+
+[workspace.dependencies]
+effs = { path = "./effs", version = "0.0.1" }
+
+anyhow = "1.0.0"
+thiserror = "1.0.0"
