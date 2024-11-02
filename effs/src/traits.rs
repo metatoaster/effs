@@ -8,7 +8,7 @@ use crate::{
     error::Error,
 };
 
-pub trait Effect {
+pub trait Effect: Send + Sync {
     /// Take an origin and a request, to produce a list of 2-tuple that maps from a OsString to
     /// an `Entry`, where the entry represents a point to some dir, filter or filtrated bytes.
     ///
@@ -23,7 +23,7 @@ pub trait Effect {
     fn apply(&mut self, origin: &Path, request: &Path) -> Result<Vec<(OsString, Entry)>, Error>;
 }
 
-pub trait EffsSource {
+pub trait EffsSource: Send + Sync {
     /// Take an origin and a request, to produce a list of 2-tuple that maps from a OsString to
     /// an `Entry`, where the entry represents a point to some dir, filter or filtrated bytes.
     ///

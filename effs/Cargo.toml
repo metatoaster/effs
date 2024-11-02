@@ -4,5 +4,7 @@ version = "0.0.1"
 edition = "2021"
 
 [dependencies]
+fuse3 = { workspace = true, features = ["tokio-runtime", "unprivileged"] }
+futures-util = { workspace = true }
 pin-project-lite = { workspace = true }
 thiserror = { workspace = true }

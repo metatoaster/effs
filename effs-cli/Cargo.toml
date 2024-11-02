@@ -1,0 +1,10 @@
+[package]
+name = "effs-cli"
+version = "0.0.1"
+edition = "2021"
+
+[dependencies]
+effs = { workspace = true }
+fuse3 = { workspace = true, features = ["tokio-runtime", "unprivileged"] }
+libc = { workspace = true }
+tokio = { workspace = true, features = ["macros", "rt", "signal"] }

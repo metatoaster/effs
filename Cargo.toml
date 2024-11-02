@@ -1,10 +1,12 @@
 [workspace]
 members = [
     "effs",
+    "effs-cli",
     "effs-image",
 ]
 default-members = [
     "effs",
+    "effs-cli",
     "effs-image",
 ]
 resolver = "2"
@@ -14,8 +16,10 @@ effs = { path = "./effs", version = "0.0.1" }
 effs-image = { path = "./effs-image", version = "0.0.1" }
 
 anyhow = "1.0.0"
-fuser = "0.15.0"
+fuse3 = "0.8.1"
+futures-util = "0.3.30"
 image = "0.25.4"
+libc = "0.2.158"
 pin-project-lite = "0.2.15"
 tempfile = "3.13.0"
 thiserror = "1.0.0"
