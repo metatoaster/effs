@@ -18,7 +18,7 @@ pub mod error;
 
 use error::Error;
 
-pub trait Setup {
+pub trait Effect {
     /// Take an origin and a request, to produce a list of 2-tuple that maps from a PathBuf to
     /// an `Entry`, where the entry represents a point to some dir, filter or filtrated bytes.
     ///
@@ -48,6 +48,12 @@ pin_project! {
 #[derive(Clone)]
 pub enum Entry {
     Dir,
+    // TODO some kind of wrapper around this for size hints?
+    // certain kinds of filtering will provide size-hints before the whole thing is
+    // read into memory (e.g. archive files), but for image manipulation this would not
+    // be available until the filter is called, then the size is set.  It may be useful
+    // to store the size somehow.  Or be lazy and provide the size equal to the original
+    // source file.
     Filter(Filter),
     Filtrated(Arc<[u8]>),
 }
@@ -126,9 +132,9 @@ pub trait EffsSource {
     fn dir(&mut self, request: PathBuf) -> Result<Vec<(OsString, Entry)>, Error>;
 }
 
-impl<S> EffsSource for Source<S>
+impl<E> EffsSource for Source<E>
 where
-    S: Setup
+    E: Effect
 {
     fn dir(&mut self, request: PathBuf) -> Result<Vec<(OsString, Entry)>, Error> {
         self.setup.apply(self.source_path.clone(), request.clone())

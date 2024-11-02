@@ -1,11 +1,11 @@
 use effs::{
     error::Error,
+    Effect,
     EffsSource,
     Entry,
     Filter,
     Filtrate,
     Source,
-    Setup,
 };
 use std::{
     ffi::OsString,
@@ -36,7 +36,7 @@ impl Crop {
     }
 }
 
-impl Setup for Crop {
+impl Effect for Crop {
     fn apply(&mut self, path: PathBuf, request: PathBuf) -> Result<Vec<(OsString, Entry)>, Error> {
         let basename = path.clone()
             .file_name()
