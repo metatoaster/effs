@@ -1,11 +1,13 @@
 use effs::{
     error::Error,
-    Effect,
-    EffsSource,
-    Entry,
-    Filter,
-    Filtrate,
-    Source,
+    entry::Entry,
+    filter::Filter,
+    filtrate::Filtrate,
+    source::Source,
+    traits::{
+        Effect,
+        EffsSource,
+    },
 };
 use std::{
     ffi::OsString,
@@ -15,7 +17,10 @@ use std::{
         Seek,
         SeekFrom,
     },
-    path::PathBuf,
+    path::{
+        Path,
+        PathBuf,
+    },
 };
 
 pub struct Crop {
@@ -37,10 +42,11 @@ impl Crop {
 }
 
 impl Effect for Crop {
-    fn apply(&mut self, path: PathBuf, request: PathBuf) -> Result<Vec<(OsString, Entry)>, Error> {
+    fn apply(&mut self, path: &Path, request: &Path) -> Result<Vec<(OsString, Entry)>, Error> {
+        let path = path.to_owned();
         let basename = path.clone()
             .file_name()
-            .ok_or(Error::BadSourcePath(path.clone()))?
+            .ok_or_else(|| Error::BadSourcePath(path.clone()))?
             .to_owned();
         // TODO actually implement image filter; for now use seek/read length as surrogate placeholder
         let start = self.x as u64;
@@ -49,7 +55,7 @@ impl Effect for Crop {
             (
                 basename,
                 Filter::new(move || {
-                    let path = path.clone();
+                    let path = path.to_owned();
                     Filtrate::new(
                         async move {
                             let mut file = File::open(&path)?;
@@ -74,8 +80,8 @@ mod test {
 
     #[tokio::test]
     async fn crop() -> anyhow::Result<()> {
-        let dir = tempdir()?;
-        let source = dir.path().join("source");
+        let root = tempdir()?;
+        let source = root.path().join("source");
         let mut source_file = File::create(source.clone())?;
         writeln!(source_file, "0123456789")?;
 
@@ -84,7 +90,7 @@ mod test {
             "".into(),
             Crop::new(1, 1, 4, 4),
         );
-        let result = effs_source.dir("".into())?;
+        let result = effs_source.dir(Path::new(""))?;
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].0, PathBuf::from("source"));
         let filtrate = match &result[0].1 {
