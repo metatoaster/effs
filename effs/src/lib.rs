@@ -2,7 +2,10 @@ use pin_project_lite::pin_project;
 use std::{
     ffi::OsString,
     future::Future,
-    path::PathBuf,
+    path::{
+        Path,
+        PathBuf,
+    },
     pin::Pin,
     sync::Arc,
     task::{
@@ -87,16 +90,50 @@ impl Future for Filtrate {
 }
 
 pub struct Source<S> {
-    /// This is the source file
+    // This is the source file
     source_path: PathBuf,
-    /// This is the destination path, with the root at (or relative to) the mount point.
+    // This is the destination path, with the root at (or relative to) the mount point.
     dest_path: PathBuf,
-    /// The filter setup
+    // Additional struct providing the data required for the filter setup.
     setup: S,
+    // TODO cache goes here?
 }
 
-pub trait EffsSource {}
-impl<S: Setup> EffsSource for Source<S> {}
+impl<S> Source<S> {
+    pub fn new(
+        source_path: PathBuf,
+        dest_path: PathBuf,
+        setup: S,
+    ) -> Self {
+        Self {
+            source_path,
+            dest_path,
+            setup,
+        }
+    }
+}
+
+pub trait EffsSource {
+    /// Take an origin and a request, to produce a list of 2-tuple that maps from a PathBuf to
+    /// an `Entry`, where the entry represents a point to some dir, filter or filtrated bytes.
+    ///
+    /// `request` is the subpath relative to the assoicated `Source.dest_path`.  The full path
+    /// should either be the root or lead to some valid Entry::Dir.  If the request hits a path
+    /// it should be an error.
+    ///
+    /// returns a result with a vector containing a listing of pathbufs pointing to their respective
+    /// filters.
+    fn dir(&mut self, request: PathBuf) -> Result<Vec<(OsString, Entry)>, Error>;
+}
+
+impl<S> EffsSource for Source<S>
+where
+    S: Setup
+{
+    fn dir(&mut self, request: PathBuf) -> Result<Vec<(OsString, Entry)>, Error> {
+        self.setup.apply(self.source_path.clone(), request.clone())
+    }
+}
 
 pub struct Effs {
     mount_point: PathBuf,

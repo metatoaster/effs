@@ -1,8 +1,10 @@
 use effs::{
     error::Error,
+    EffsSource,
     Entry,
     Filter,
     Filtrate,
+    Source,
     Setup,
 };
 use std::{
@@ -77,8 +79,12 @@ mod test {
         let mut source_file = File::create(source.clone())?;
         writeln!(source_file, "0123456789")?;
 
-        let mut filter = Crop::new(1, 1, 4, 4);
-        let result = filter.apply(source, "".into())?;
+        let mut effs_source = Source::new(
+            source,
+            "".into(),
+            Crop::new(1, 1, 4, 4),
+        );
+        let result = effs_source.dir("".into())?;
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].0, PathBuf::from("source"));
         let filtrate = match &result[0].1 {
