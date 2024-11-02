@@ -1,8 +1,10 @@
 use pin_project_lite::pin_project;
 use std::{
+    ffi::OsString,
     future::Future,
     path::PathBuf,
     pin::Pin,
+    sync::Arc,
     task::{
         Context,
         Poll,
@@ -14,28 +16,58 @@ pub mod error;
 use error::Error;
 
 pub trait Setup {
-    // assumed that an input stream may be more ideal, but for now just take the whole buffer
-    fn apply(&self, path: PathBuf) -> Result<Vec<(PathBuf, Filter)>, Error>;
+    /// Take an origin and a request, to produce a list of 2-tuple that maps from a PathBuf to
+    /// an `Entry`, where the entry represents a point to some dir, filter or filtrated bytes.
+    ///
+    /// `origin` is the source path that points to an existing location on the system (e.g. some
+    /// file or directory).
+    /// `request` is the subpath relative to the assoicated `Source.dest_path`.  The full path
+    /// should lead to some valid Entry::Dir.
+    /// that was previously prepared.
+    ///
+    /// returns a result with a vector containing a listing of pathbufs pointing to their respective
+    /// filters.
+    fn apply(&mut self, origin: PathBuf, request: PathBuf) -> Result<Vec<(OsString, Entry)>, Error>;
 }
 
+#[derive(Clone)]
 pub struct Filter {
-    pub(crate) inner: Box<dyn Fn() -> Filtrate>,
-}
-
-impl Filter {
-    pub fn new(f: impl Fn() -> Filtrate + 'static) -> Self {
-        Self { inner: Box::new(f) }
-    }
-
-    pub fn get(&self) -> Filtrate {
-        (self.inner)()
-    }
+    pub(crate) inner: Arc<dyn Fn() -> Filtrate>,
 }
 
 pin_project! {
     pub struct Filtrate {
         #[pin]
         pub(crate) inner: Pin<Box<dyn Future<Output = Result<Vec<u8>, Error>> + Send>>,
+    }
+}
+
+#[derive(Clone)]
+pub enum Entry {
+    Dir,
+    Filter(Filter),
+    Filtrated(Arc<[u8]>),
+}
+
+impl From<Filter> for Entry {
+    fn from(f: Filter) -> Self {
+        Self::Filter(f)
+    }
+}
+
+impl From<Arc<[u8]>> for Entry {
+    fn from(f: Arc<[u8]>) -> Self {
+        Self::Filtrated(f)
+    }
+}
+
+impl Filter {
+    pub fn new(f: impl Fn() -> Filtrate + 'static) -> Self {
+        Self { inner: Arc::new(f) }
+    }
+
+    pub fn get(&self) -> Filtrate {
+        (self.inner)()
     }
 }
 
@@ -54,12 +86,19 @@ impl Future for Filtrate {
     }
 }
 
-pub struct Source {
-    path: PathBuf,
-    setup: Box<dyn Setup>,
+pub struct Source<S> {
+    /// This is the source file
+    source_path: PathBuf,
+    /// This is the destination path, with the root at (or relative to) the mount point.
+    dest_path: PathBuf,
+    /// The filter setup
+    setup: S,
 }
+
+pub trait EffsSource {}
+impl<S: Setup> EffsSource for Source<S> {}
 
 pub struct Effs {
     mount_point: PathBuf,
-    source: Vec<Source>,
+    source: Vec<Box<dyn EffsSource>>,
 }

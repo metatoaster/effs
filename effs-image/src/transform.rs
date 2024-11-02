@@ -1,10 +1,12 @@
 use effs::{
     error::Error,
+    Entry,
     Filter,
     Filtrate,
     Setup,
 };
 use std::{
+    ffi::OsString,
     fs::File,
     io::{
         Read,
@@ -33,12 +35,11 @@ impl Crop {
 }
 
 impl Setup for Crop {
-    fn apply(&self, path: PathBuf) -> Result<Vec<(PathBuf, Filter)>, Error> {
-        let basename: PathBuf = path.clone()
+    fn apply(&mut self, path: PathBuf, request: PathBuf) -> Result<Vec<(OsString, Entry)>, Error> {
+        let basename = path.clone()
             .file_name()
             .ok_or(Error::BadSourcePath(path.clone()))?
-            .to_owned()
-            .into();
+            .to_owned();
         // TODO actually implement image filter; for now use seek/read length as surrogate placeholder
         let start = self.x as u64;
         let len = self.w;
@@ -56,7 +57,7 @@ impl Setup for Crop {
                             Ok(output)
                         }
                     )
-                })
+                }).into()
             )
         ])
     }
@@ -76,11 +77,14 @@ mod test {
         let mut source_file = File::create(source.clone())?;
         writeln!(source_file, "0123456789")?;
 
-        let filter = Crop::new(1, 1, 4, 4);
-        let result = filter.apply(source)?;
+        let mut filter = Crop::new(1, 1, 4, 4);
+        let result = filter.apply(source, "".into())?;
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].0, PathBuf::from("source"));
-        let filtrate = result[0].1.get().await?;
+        let filtrate = match &result[0].1 {
+            Entry::Filter(filter) => filter.get().await?,
+            _ => unreachable!(),
+        };
         assert_eq!(filtrate, b"1234");
         Ok(())
     }
