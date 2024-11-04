@@ -8,3 +8,5 @@ effs = { workspace = true }
 fuse3 = { workspace = true, features = ["tokio-runtime", "unprivileged"] }
 libc = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt", "signal"] }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }

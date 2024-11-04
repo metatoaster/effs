@@ -4,11 +4,11 @@ use crate::filtrate::Filtrate;
 
 #[derive(Clone)]
 pub struct Filter {
-    pub(crate) inner: Arc<dyn Fn() -> Filtrate>,
+    pub(crate) inner: Arc<dyn Fn() -> Filtrate + Send + Sync>,
 }
 
 impl Filter {
-    pub fn new(f: impl Fn() -> Filtrate + 'static) -> Self {
+    pub fn new(f: impl Fn() -> Filtrate + Send + Sync + 'static) -> Self {
         Self { inner: Arc::new(f) }
     }
 

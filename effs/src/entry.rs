@@ -1,10 +1,14 @@
-use std::sync::Arc;
+use std::{
+    collections::BTreeMap,
+    ffi::OsString,
+    sync::Arc,
+};
 
 use crate::filter::Filter;
 
 #[derive(Clone)]
 pub enum Entry {
-    Dir,
+    Dir(BTreeMap<OsString, u64>),
     // TODO some kind of wrapper around this for size hints?
     // certain kinds of filtering will provide size-hints before the whole thing is
     // read into memory (e.g. archive files), but for image manipulation this would not
