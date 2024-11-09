@@ -10,6 +10,8 @@ pub enum Error {
     Internal,
     #[error(transparent)]
     Source(#[from] SourceError),
+    #[error(transparent)]
+    NoSuchNode(#[from] NoSuchNode),
 }
 
 #[non_exhaustive]
@@ -33,3 +35,7 @@ pub enum EffectError {
     #[error("Bad Request Path: {0}; Reason: {1}")]
     BadRequestPath(PathBuf, &'static str),
 }
+
+#[derive(Debug, Error)]
+#[error("No Such Node: {0}")]
+pub struct NoSuchNode(pub(crate) u64);
