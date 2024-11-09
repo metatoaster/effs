@@ -1,6 +1,6 @@
 use fuse3::{
     raw::prelude::*,
-    // Errno,
+    Errno,
     Result,
 };
 use futures_util::stream::{
@@ -18,6 +18,7 @@ use std::{
     vec::IntoIter,
 };
 
+use crate::entry::Entry;
 use super::Effs;
 
 const TTL: Duration = Duration::from_secs(1);
@@ -40,41 +41,30 @@ impl Filesystem for Effs {
 
     async fn lookup(
         &self,
-        req: Request,
+        _req: Request,
         parent: u64,
         name: &OsStr,
     ) -> Result<ReplyEntry> {
-        tracing::debug!("lookup name={name:?}");
-
-        /*
-        // Make it appear that every path lead to some directory.
-        let attr = FileAttr {
-            ino: 1,
-            size: 0,
-            blocks: 0,
-            atime: SystemTime::now().into(),
-            mtime: SystemTime::UNIX_EPOCH.into(),
-            ctime: SystemTime::UNIX_EPOCH.into(),
-            kind: FileType::Directory,
-            perm: fuse3::perm_from_mode_and_kind(FileType::Directory, 0755),
-            nlink: 2,
-            uid: req.uid,
-            gid: req.gid,
-            rdev: 0,
-            blksize: 0,
-        };
+        tracing::debug!("lookup parent={parent} name={name:?}");
+        let nodes = self.nodes
+            .read()
+            .map_err(|_| libc::ENOTRECOVERABLE)?;
+        let (node, attr) = nodes.attr_for_node_id(
+            nodes.lookup_node_id_name(
+                nodes.node_id(parent)?,
+                name,
+            )?
+        )?;
         Ok(ReplyEntry {
             ttl: TTL,
             attr: attr,
-            generation: 0,
+            generation: node.generation,
         })
-        */
-        Err(libc::ENOENT.into())
     }
 
     async fn getattr(
         &self,
-        req: Request,
+        _req: Request,
         inode: u64,
         _fh: Option<u64>,
         _flags: u32,

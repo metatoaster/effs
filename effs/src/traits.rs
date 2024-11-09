@@ -13,7 +13,7 @@ use crate::{
 
 /// Apply an effect to a source file or directory.
 ///
-/// Given an origin and the request subpath, produce a list of 2-tuple that maps from a OsString
+/// Given an origin and the request path, produce a list of 2-tuple that maps from a OsString
 /// to an `Entry`, where the entry represents a point to some dir, filter or filtrated bytes.
 ///
 /// `origin` is the source path that points to an existing location on the system (e.g. some

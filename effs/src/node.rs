@@ -5,13 +5,17 @@ use indextree::{
 };
 use libc::mode_t;
 use std::{
+    ffi::OsStr,
     collections::BTreeMap,
     time::SystemTime,
 };
 
 use crate::{
     entry::Entry,
-    error::NoSuchNode,
+    error::{
+        NoSuchNode,
+        NodeLookupError,
+    },
 };
 
 mod fs;
@@ -68,6 +72,42 @@ impl Nodes {
                 index.try_into().map_err(|_| NoSuchNode(inode))?
             )
             .ok_or_else(|| NoSuchNode(inode))
+    }
+
+    pub(crate) fn basic_lookup_node_id_name(
+        &self,
+        node_id: NodeId,
+        name: &OsStr,
+    ) -> Result<NodeId, NodeLookupError> {
+        let arena = &self.0;
+        let node = &arena[node_id];
+        let inner = node.get();
+        let dir = match inner.entry
+            .as_ref()
+            .ok_or_else(|| NodeLookupError::NoEntry(
+                Into::<usize>::into(node_id) as u64
+            ))?
+        {
+            Entry::Dir(dir) => Ok(dir),
+            _ => Err(NodeLookupError::NotDirEntry(
+                Into::<usize>::into(node_id) as u64
+            )),
+        }?;
+
+        self.basic_node_id(
+            *dir.get(name)
+                // Simple lookup error.
+                .ok_or_else(|| NodeLookupError::NoSuchName(
+                    Into::<usize>::into(node_id) as u64,
+                    name.to_string_lossy().to_string(),
+                ))?
+        )
+            // While the name exists and points to some node_id, it does
+            // not in fact exists in the arena.
+            .map_err(|_| NodeLookupError::NoSuchName(
+                Into::<usize>::into(node_id) as u64,
+                name.to_string_lossy().to_string(),
+            ))
     }
 }
 

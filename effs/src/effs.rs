@@ -1,13 +1,19 @@
-use std::sync::RwLock;
+use indextree::NodeId;
+use std::{
+    path::{
+        Component,
+        Path,
+    },
+    sync::RwLock,
+};
 
 use crate::{
-    error::{
-        Error,
-        SourceError,
-    },
+    error::Error,
     node::Nodes,
     traits::EffsSource,
 };
+
+mod fs;
 
 pub struct Effs {
     sources: RwLock<Vec<Box<dyn EffsSource>>>,
@@ -23,4 +29,63 @@ impl Default for Effs {
     }
 }
 
-mod fs;
+impl Effs {
+    pub fn push_source(&self, source: impl EffsSource) -> Result<(), Error> {
+        let mut sources = self.sources
+            .write()
+            .map_err(|_| Error::Internal)?;
+        sources.push(Box::new(source));
+        Ok(())
+    }
+
+    fn path_to_node_id(&self, path: &Path) -> Result<NodeId, Error> {
+        let nodes = self.nodes
+            .read()
+            .map_err(|_| Error::Internal)?;
+
+        let mut comps = path.components().peekable();
+        if comps.peek() == Some(&Component::RootDir) {
+            // discard the root component
+            comps.next();
+        }
+        let mut result = nodes.basic_node_id(1)?;
+        // XXX this assumes the incoming path is fully normalize, i.e. without
+        // Component::ParentDir in the mix
+        while let Some(Component::Normal(fragment)) = comps.next() {
+            result = nodes.basic_lookup_node_id_name(result, fragment)?;
+        }
+
+        Ok(result)
+    }
+
+    pub fn build_nodes(&self, path: &Path) -> Result<(), Error> {
+        let mut sources = self.sources
+            .write()
+            .map_err(|_| Error::Internal)?;
+        let mut nodes = self.nodes
+            .write()
+            .map_err(|_| Error::Internal)?;
+        let processed = sources.iter_mut()
+            .filter_map(|source| {
+                // TODO figure out how to deal with error here
+                source.dir(path).ok()
+            });
+        todo!()
+        // Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn basic() -> anyhow::Result<()> {
+        let fs = Effs::default();
+        assert_eq!(1usize, fs.path_to_node_id(Path::new(""))?.into());
+        assert_eq!(1usize, fs.path_to_node_id(Path::new("/"))?.into());
+        assert!(fs.path_to_node_id(Path::new("no_such_path")).is_err());
+        assert!(fs.path_to_node_id(Path::new("/no_such_path")).is_err());
+        Ok(())
+    }
+}

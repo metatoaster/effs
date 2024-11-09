@@ -4,8 +4,12 @@ use fuse3::{
     Errno,
     Result,
 };
+use std::ffi::OsStr;
 
-use crate::entry::Entry;
+use crate::{
+    entry::Entry,
+    error::NodeLookupError,
+};
 
 use super::{
     Node,
@@ -16,6 +20,15 @@ impl Nodes {
     pub(crate) fn node_id(&self, inode: u64) -> Result<NodeId> {
         self.basic_node_id(inode)
             .map_err(|_| Errno::from(libc::ENOENT))
+    }
+
+    pub(crate) fn lookup_node_id_name(&self, node_id: NodeId, name: &OsStr) -> Result<NodeId> {
+        self.basic_lookup_node_id_name(node_id, name)
+            .map_err(|e| match e {
+                NodeLookupError::NoEntry(..) => Errno::from(libc::ENOENT),
+                NodeLookupError::NoSuchName(..) => Errno::from(libc::ENOENT),
+                NodeLookupError::NotDirEntry(..) => Errno::from(libc::ENOTDIR),
+            })
     }
 
     pub(crate) fn with_inode<'a, T>(
