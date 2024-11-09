@@ -8,7 +8,7 @@ use std::{
 
 use crate::{
     entry::Entry,
-    error::Error,
+    error::SourceError,
     traits::{
         Effect,
         EffsSource,
@@ -43,7 +43,7 @@ impl<E> EffsSource for Source<E>
 where
     E: Effect
 {
-    fn dir(&mut self, request: &Path) -> Result<Vec<(OsString, Entry)>, Error> {
-        self.setup.apply(self.source_path.as_path(), request)
+    fn dir(&mut self, request: &Path) -> Result<Vec<(OsString, Entry)>, SourceError> {
+        Ok(self.setup.apply(self.source_path.as_path(), request)?)
     }
 }

@@ -1,6 +1,10 @@
 use std::sync::RwLock;
 
 use crate::{
+    error::{
+        Error,
+        SourceError,
+    },
     node::Nodes,
     traits::EffsSource,
 };

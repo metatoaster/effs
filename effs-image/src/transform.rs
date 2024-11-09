@@ -1,5 +1,5 @@
 use effs::{
-    error::Error,
+    error::EffectError,
     entry::Entry,
     filter::Filter,
     filtrate::Filtrate,
@@ -42,11 +42,11 @@ impl Crop {
 }
 
 impl Effect for Crop {
-    fn apply(&mut self, path: &Path, request: &Path) -> Result<Vec<(OsString, Entry)>, Error> {
+    fn apply(&mut self, path: &Path, request: &Path) -> Result<Vec<(OsString, Entry)>, EffectError> {
         let path = path.to_owned();
         let basename = path.clone()
             .file_name()
-            .ok_or_else(|| Error::BadSourcePath(path.clone()))?
+            .ok_or_else(|| EffectError::BadSourcePath(path.clone(), "no final component found for source"))?
             .to_owned();
         // TODO actually implement image filter; for now use seek/read length as surrogate placeholder
         let start = self.x as u64;
