@@ -57,6 +57,7 @@ impl Nodes {
             Entry::Dir(_) => FileType::Directory,
             Entry::Filter(_) => FileType::RegularFile,
             Entry::Filtrated(_) => FileType::RegularFile,
+            Entry::PreciseFilter(_) => FileType::RegularFile,
         };
         handler((inner, FileAttr {
             ino: Into::<usize>::into(node_id) as u64,  // FIXME change to usize::from when possible

@@ -4,19 +4,25 @@ use std::{
     sync::Arc,
 };
 
-use crate::filter::Filter;
+use crate::filter::{
+    Filter,
+    PreciseFilter,
+};
 
 #[derive(Clone)]
 pub enum Entry {
+    /// A directory listing.  It maps from some name to an inode.
     Dir(BTreeMap<OsString, u64>),
-    // TODO some kind of wrapper around this for size hints?
-    // certain kinds of filtering will provide size-hints before the whole thing is
-    // read into memory (e.g. archive files), but for image manipulation this would not
-    // be available until the filter is called, then the size is set.  It may be useful
-    // to store the size somehow.  Or be lazy and provide the size equal to the original
-    // source file.
+    /// A standard naive filter, it provides a function that produces a
+    /// future that will retrieve the entirety of some output on demand.
     Filter(Filter),
+    /// A completely cached output through a filter.
     Filtrated(Arc<[u8]>),
+    /// A version of filter that can be precise about what to retrieve;
+    /// rather than providing a future that will retrieve the entirety
+    /// of the output, additional offset and size argument must be
+    /// provided to retrieve the desired output.
+    PreciseFilter(PreciseFilter),
 }
 
 impl From<Filter> for Entry {

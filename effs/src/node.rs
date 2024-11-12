@@ -41,6 +41,7 @@ impl Node {
             Entry::Dir(_) => 0755,
             Entry::Filter(_) => 0644,
             Entry::Filtrated(_) => 0644,
+            Entry::PreciseFilter(_) => 0644,
         };
         self.time = SystemTime::now().into();
         self.generation += 1;
