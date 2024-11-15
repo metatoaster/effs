@@ -9,10 +9,12 @@ use crate::filter::{
     PreciseFilter,
 };
 
+pub type Dir = BTreeMap<OsString, u64>;
+
 #[derive(Clone)]
 pub enum Entry {
     /// A directory listing.  It maps from some name to an inode.
-    Dir(BTreeMap<OsString, u64>),
+    Dir(Dir),
     /// A standard naive filter, it provides a function that produces a
     /// future that will retrieve the entirety of some output on demand.
     Filter(Filter),

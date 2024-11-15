@@ -4,6 +4,7 @@ version = "0.0.1"
 edition = "2021"
 
 [dependencies]
+clap = { workspace = true, features = ["derive", "env"] }
 effs = { workspace = true }
 fuse3 = { workspace = true, features = ["tokio-runtime", "unprivileged"] }
 libc = { workspace = true }

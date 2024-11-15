@@ -1,11 +1,23 @@
-use effs::Effs;
+use clap::Parser;
+use effs::{
+    Effs,
+    effect::Mirror,
+    source::Source,
+};
 use fuse3::{
     MountOptions,
     raw::Session,
 };
-use std::env;
+use std::path::Path;
 use tokio::signal;
 use tracing::Level;
+
+#[derive(Debug, Parser)]
+struct Cli {
+    mount_path: String,
+    #[clap(long)]
+    mirror_source: Option<String>,
+}
 
 fn log_init() {
     let subscriber = tracing_subscriber::fmt()
@@ -18,11 +30,7 @@ fn log_init() {
 async fn main() {
     log_init();
 
-    let mount_path = env::args_os()
-        .skip(1)
-        .take(1)
-        .next()
-        .expect("no mount point specified");
+    let args = Cli::parse();
 
     let uid = unsafe { libc::getuid() };
     let gid = unsafe { libc::getgid() };
@@ -36,8 +44,19 @@ async fn main() {
         .no_open_dir_support(true)
         .read_only(true);
 
+    let effs = Effs::default();
+    if let Some(mirror_source) = args.mirror_source {
+        effs.push_source(Source::new(
+            mirror_source.into(),
+            "".into(),
+            Mirror,
+        )).expect("error with mirror source");
+        effs.build_nodes(Path::new(""))
+            .expect("failed to build mirror source nodes");
+    }
+
     let mut mount_handle = Session::new(mount_options)
-        .mount_with_unprivileged(Effs::default(), mount_path)
+        .mount_with_unprivileged(effs, args.mount_path)
         .await
         .unwrap();
 

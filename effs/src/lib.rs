@@ -1,3 +1,4 @@
+pub mod effect;
 pub mod effs;
 pub mod entry;
 pub mod error;

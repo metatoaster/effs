@@ -9,7 +9,10 @@ use std::{
 
 use crate::{
     error::Error,
-    node::Nodes,
+    node::{
+        Node,
+        Nodes,
+    },
     traits::EffsSource,
 };
 
@@ -59,19 +62,34 @@ impl Effs {
     }
 
     pub fn build_nodes(&self, path: &Path) -> Result<(), Error> {
+        let path = if path.starts_with("/") {
+            path.strip_prefix("/")
+                .expect("base somehow wasn't start_with \"/\"")
+        } else {
+            path
+        };
+        let par_node_id = self.path_to_node_id(path)?;
+
         let mut sources = self.sources
             .write()
             .map_err(|_| Error::Internal)?;
         let mut nodes = self.nodes
             .write()
             .map_err(|_| Error::Internal)?;
-        let processed = sources.iter_mut()
+        let process = sources.iter_mut()
             .filter_map(|source| {
                 // TODO figure out how to deal with error here
-                source.dir(path).ok()
-            });
-        todo!()
-        // Ok(())
+                // TODO should probably log the error
+                source.dir(path)
+                    .map(|r| r.into_iter())
+                    .ok()
+            })
+            .flatten();
+        for (name, entry) in process {
+            // TODO should probably log the error
+            nodes.link_entry(par_node_id, name, entry).ok();
+        }
+        Ok(())
     }
 }
 

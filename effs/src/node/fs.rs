@@ -67,7 +67,7 @@ impl Nodes {
             mtime: inner.time,
             ctime: inner.time,
             kind: kind,
-            perm: fuse3::perm_from_mode_and_kind(kind, 0755),
+            perm: fuse3::perm_from_mode_and_kind(kind, inner.mode),
             nlink: 0,
             uid: inner.uid,
             gid: inner.gid,

@@ -16,6 +16,7 @@ effs = { path = "./effs", version = "0.0.1" }
 effs-image = { path = "./effs-image", version = "0.0.1" }
 
 anyhow = "1.0.0"
+clap = "4.2.0"
 fuse3 = "0.8.1"
 futures-util = "0.3.30"
 image = "0.25.4"

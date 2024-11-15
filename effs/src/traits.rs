@@ -22,8 +22,7 @@ use crate::{
 /// should lead to some valid Entry::Dir that was returned earlier, and if it's something else
 /// an error may happen.
 ///
-/// Returns a result with a vector containing a listing of pathbufs pointing to their respective
-/// filters.
+/// Returns a result with a vector containing a listing of `OsString` pointing to an `Entry`.
 pub trait Effect<Error=EffectError>: Send + Sync + 'static {
     fn apply(&mut self, origin: &Path, request: &Path) -> Result<Vec<(OsString, Entry)>, Error>;
 }
@@ -37,8 +36,7 @@ pub trait Effect<Error=EffectError>: Send + Sync + 'static {
 /// should either be the root or lead to some valid Entry::Dir.  If the request hits a filter
 /// or filtrated an error will happen.
 ///
-/// returns a result with a vector containing a listing of pathbufs pointing to their respective
-/// filters.
+/// Returns a result with a vector containing a listing of `OsString` pointing to an `Entry`.
 pub trait EffsSource<Error=SourceError>: Send + Sync + 'static {
     fn dir(&mut self, request: &Path) -> Result<Vec<(OsString, Entry)>, Error>;
 }

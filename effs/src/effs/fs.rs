@@ -3,9 +3,12 @@ use fuse3::{
     Errno,
     Result,
 };
-use futures_util::stream::{
-    self,
-    Iter,
+use futures_util::{
+    StreamExt,
+    stream::{
+        self,
+        Iter,
+    },
 };
 use std::{
     ffi::{
@@ -27,7 +30,7 @@ impl Filesystem for Effs {
     type DirEntryStream<'a> = Iter<IntoIter<Result<DirectoryEntry>>>
     where
         Self: 'a;
-    type DirEntryPlusStream<'a> = Iter<Skip<IntoIter<Result<DirectoryEntryPlus>>>>
+    type DirEntryPlusStream<'a> = Iter<IntoIter<Result<DirectoryEntryPlus>>>
     where
         Self: 'a;
 
@@ -131,11 +134,32 @@ impl Filesystem for Effs {
             }
         })?;
 
-        let entries = vec![Ok(cur_entry), Ok(par_entry)];
-        // cur_nid.children(arena);
+        let pre_entries = vec![Ok(cur_entry), Ok(par_entry)].into_iter();
+
+        // TODO use stream::iter to do this in one slurp rather than buffering this
+        let entries = pre_entries
+            .chain(
+                cur_nid.children(arena)
+                    .filter_map(|nid| nodes.attr_for_node_id(nid).ok())
+                    .enumerate()
+                    .map(|(i, (node, attr))| {
+                        Ok(DirectoryEntryPlus {
+                            inode: attr.ino,
+                            generation: node.generation,
+                            kind: attr.kind,
+                            name: node.name.clone(),
+                            offset: i as i64 + 3,
+                            attr: attr,
+                            entry_ttl: TTL,
+                            attr_ttl: TTL,
+                        })
+                    })
+            )
+            .skip(offset as usize)
+            .collect::<Vec<_>>();
 
         Ok(ReplyDirectoryPlus {
-            entries: stream::iter(entries.into_iter().skip(offset as usize)),
+            entries: stream::iter(entries),
         })
     }
 }
