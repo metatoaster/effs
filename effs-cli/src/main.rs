@@ -50,9 +50,9 @@ async fn main() {
             mirror_source.into(),
             "".into(),
             Mirror,
-        )).expect("error with mirror source");
-        effs.build_nodes(Path::new(""))
-            .expect("failed to build mirror source nodes");
+        ))
+            .await
+            .expect("error with mirror source");
     }
 
     let mut mount_handle = Session::new(mount_options)

@@ -4,7 +4,10 @@ use fuse3::{
     Errno,
     Result,
 };
-use std::ffi::OsStr;
+use std::{
+    cmp::min,
+    ffi::OsStr,
+};
 
 use crate::{
     entry::Entry,
@@ -61,7 +64,7 @@ impl Nodes {
         };
         handler((inner, FileAttr {
             ino: Into::<usize>::into(node_id) as u64,  // FIXME change to usize::from when possible
-            size: 0,
+            size: u64::MAX >> 1,
             blocks: 0,
             atime: inner.time,
             mtime: inner.time,
@@ -85,4 +88,32 @@ impl Nodes {
     pub(crate) fn attr_for_node_id(&self, node_id: NodeId) -> Result<(&Node, FileAttr)> {
         self.with_node_id(node_id, Result::Ok)
     }
+
+    pub(crate) async fn read(
+        &self,
+        node_id: NodeId,
+        offset: u64,
+        size: u32,
+    ) -> Result<Vec<u8>> {
+        let arena = &self.0;
+        let node = &arena[node_id];
+        let inner = node.get();
+        match inner.entry
+            .as_ref()
+            .ok_or_else(|| Errno::from(libc::ENOENT))?
+        {
+            Entry::Dir(_) => Err(Errno::from(libc::ENOTDIR)),
+            Entry::Filter(f) => {
+                let r = f.get()
+                    .await
+                    .map_err(|_| Errno::from(libc::EIO))?;
+                Ok(r[offset as usize..min(r.len(), size as usize)].to_vec())
+            }
+            Entry::Filtrated(r) => Ok(r[offset as usize..min(r.len(), size as usize)].to_vec()),
+            Entry::PreciseFilter(f) => Ok(f.get(offset, size)
+                .await
+                .map_err(|_| Errno::from(libc::EIO))?),
+        }
+    }
+
 }

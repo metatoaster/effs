@@ -14,6 +14,7 @@ use std::{
         Index,
         IndexMut,
     },
+    path::PathBuf,
     time::SystemTime,
 };
 
@@ -113,6 +114,16 @@ impl Nodes {
         Ok(())
     }
 
+    pub(crate) fn path_of_inode(&self, inode: u64) -> Result<PathBuf, NoSuchNode> {
+        let node_id = self.basic_node_id(inode)?;
+        Ok(node_id.ancestors(&self.0)
+            .map(|nid| &self[nid].get().name)
+            .collect::<Vec<_>>()
+            .into_iter()
+            .rev()
+            .collect::<PathBuf>())
+    }
+
     pub(crate) fn basic_node_id(&self, inode: u64) -> Result<NodeId, NoSuchNode> {
         let arena = &self.0;
         let index = inode as usize;
@@ -173,6 +184,7 @@ impl Default for Nodes {
     }
 }
 
+// TODO look into how this might convert to Node directly instead
 impl Index<NodeId> for Nodes {
     type Output = indextree::Node<Node>;
     fn index(&self, node: NodeId) -> &Self::Output {

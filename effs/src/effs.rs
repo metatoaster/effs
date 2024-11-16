@@ -3,9 +3,10 @@ use std::{
     path::{
         Component,
         Path,
+        PathBuf,
     },
-    sync::RwLock,
 };
+use tokio::sync::RwLock;
 
 use crate::{
     error::Error,
@@ -33,18 +34,25 @@ impl Default for Effs {
 }
 
 impl Effs {
-    pub fn push_source(&self, source: impl EffsSource) -> Result<(), Error> {
+    pub async fn push_source(&self, source: impl EffsSource) -> Result<(), Error> {
         let mut sources = self.sources
             .write()
-            .map_err(|_| Error::Internal)?;
+            .await;
         sources.push(Box::new(source));
         Ok(())
     }
 
-    fn path_to_node_id(&self, path: &Path) -> Result<NodeId, Error> {
+    pub(crate) async fn path_of_inode(&self, inode: u64) -> Result<PathBuf, Error> {
         let nodes = self.nodes
             .read()
-            .map_err(|_| Error::Internal)?;
+            .await;
+        Ok(nodes.path_of_inode(inode)?)
+    }
+
+    async fn path_to_node_id(&self, path: &Path) -> Result<NodeId, Error> {
+        let nodes = self.nodes
+            .read()
+            .await;
 
         let mut comps = path.components().peekable();
         if comps.peek() == Some(&Component::RootDir) {
@@ -61,21 +69,21 @@ impl Effs {
         Ok(result)
     }
 
-    pub fn build_nodes(&self, path: &Path) -> Result<(), Error> {
+    pub async fn build_nodes(&self, path: &Path) -> Result<(), Error> {
         let path = if path.starts_with("/") {
             path.strip_prefix("/")
                 .expect("base somehow wasn't start_with \"/\"")
         } else {
             path
         };
-        let par_node_id = self.path_to_node_id(path)?;
+        let par_node_id = self.path_to_node_id(path).await?;
 
         let mut sources = self.sources
             .write()
-            .map_err(|_| Error::Internal)?;
+            .await;
         let mut nodes = self.nodes
             .write()
-            .map_err(|_| Error::Internal)?;
+            .await;
         let process = sources.iter_mut()
             .filter_map(|source| {
                 // TODO figure out how to deal with error here
@@ -97,13 +105,13 @@ impl Effs {
 mod tests {
     use super::*;
 
-    #[test]
-    fn basic() -> anyhow::Result<()> {
+    #[tokio::test]
+    async fn basic() -> anyhow::Result<()> {
         let fs = Effs::default();
-        assert_eq!(1usize, fs.path_to_node_id(Path::new(""))?.into());
-        assert_eq!(1usize, fs.path_to_node_id(Path::new("/"))?.into());
-        assert!(fs.path_to_node_id(Path::new("no_such_path")).is_err());
-        assert!(fs.path_to_node_id(Path::new("/no_such_path")).is_err());
+        assert_eq!(1usize, fs.path_to_node_id(Path::new("")).await?.into());
+        assert_eq!(1usize, fs.path_to_node_id(Path::new("/")).await?.into());
+        assert!(fs.path_to_node_id(Path::new("no_such_path")).await.is_err());
+        assert!(fs.path_to_node_id(Path::new("/no_such_path")).await.is_err());
         Ok(())
     }
 }

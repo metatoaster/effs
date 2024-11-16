@@ -51,7 +51,7 @@ impl Filesystem for Effs {
         tracing::debug!("lookup parent={parent} name={name:?}");
         let nodes = self.nodes
             .read()
-            .map_err(|_| libc::ENOTRECOVERABLE)?;
+            .await;
         let (node, attr) = nodes.attr_for_node_id(
             nodes.lookup_node_id_name(
                 nodes.node_id(parent)?,
@@ -76,7 +76,7 @@ impl Filesystem for Effs {
         tracing::debug!("getattr inode={inode:?}");
         let nodes = self.nodes
             .read()
-            .map_err(|_| libc::ENOTRECOVERABLE)?;
+            .await;
         let (_, attr) = nodes.attr_for_inode(inode)?;
 
         Ok(ReplyAttr {
@@ -93,9 +93,23 @@ impl Filesystem for Effs {
         offset: u64,
         _lock_owner: u64,
     ) -> Result<ReplyDirectoryPlus<Self::DirEntryPlusStream<'a>>> {
+        // TODO this block should only run when the configuration to always
+        // refresh when readdirplus is called be enabled.
+        // Currently, this enables the dynamic generation of new listings, but
+        // not exactly in a friendly manner.
+        {
+            let path = self.path_of_inode(parent)
+                // this error implies the parent inode disappeared
+                .await
+                .map_err(|_| libc::ENOENT)?;
+            // TODO log this error?
+            self.build_nodes(&path)
+                .await
+                .map_err(|_| libc::ENOTRECOVERABLE)?;
+        }
         let nodes = self.nodes
             .read()
-            .map_err(|_| libc::ENOTRECOVERABLE)?;
+            .await;
         let arena = &nodes.0;
 
         let cur_nid = nodes.node_id(parent)?;
@@ -162,4 +176,22 @@ impl Filesystem for Effs {
             entries: stream::iter(entries),
         })
     }
+
+    async fn read(
+        &self,
+        _req: Request,
+        inode: u64,
+        _fh: u64,
+        offset: u64,
+        size: u32,
+    ) -> Result<ReplyData> {
+        let nodes = self.nodes
+            .read()
+            .await;
+        let node_id = nodes.node_id(inode)?;
+        let data = nodes.read(node_id, offset, size).await?;
+        tracing::debug!("read inode={inode} offset={offset} size={size} got data.len()={}", data.len());
+        Ok(ReplyData { data: data.into() })
+    }
+
 }
