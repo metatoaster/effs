@@ -107,9 +107,9 @@ impl Nodes {
                 let r = f.get()
                     .await
                     .map_err(|_| Errno::from(libc::EIO))?;
-                Ok(r[offset as usize..min(r.len(), size as usize)].to_vec())
+                Ok(r[offset as usize..min(r.len(), (size as u64 + offset) as usize)].to_vec())
             }
-            Entry::Filtrated(r) => Ok(r[offset as usize..min(r.len(), size as usize)].to_vec()),
+            Entry::Filtrated(r) => Ok(r[offset as usize..min(r.len(), (size as u64 + offset) as usize)].to_vec()),
             Entry::PreciseFilter(f) => Ok(f.get(offset, size)
                 .await
                 .map_err(|_| Errno::from(libc::EIO))?),
