@@ -177,10 +177,24 @@ impl Filesystem for Effs {
         })
     }
 
+    async fn open(&self, _req: Request, inode: u64, flags: u32) -> Result<ReplyOpen> {
+        let nodes = self.nodes
+            .read()
+            .await;
+        let _ = nodes.node_id(inode)?;
+
+        // enable FOPEN_DIRECT_IO
+        let flags = flags | 1;
+
+        // TODO set up the future for read to use?
+        Ok(ReplyOpen { fh: 0, flags })
+    }
+
     async fn read(
         &self,
         _req: Request,
         inode: u64,
+        // TODO use fh to deal with caching the future that may have been created?
         _fh: u64,
         offset: u64,
         size: u32,

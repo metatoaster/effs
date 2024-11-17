@@ -64,7 +64,7 @@ impl Nodes {
         };
         handler((inner, FileAttr {
             ino: Into::<usize>::into(node_id) as u64,  // FIXME change to usize::from when possible
-            size: u64::MAX >> 1,
+            size: 0,
             blocks: 0,
             atime: inner.time,
             mtime: inner.time,
