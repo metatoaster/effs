@@ -62,7 +62,7 @@ impl Effect for Crop {
                             file.seek(SeekFrom::Start(start))?;
                             let mut output = vec![0; len];
                             file.read(&mut output)?;
-                            Ok(output)
+                            Ok(output.into())
                         }
                     )
                 }).into()
@@ -97,7 +97,7 @@ mod test {
             Entry::Filter(filter) => filter.filtrate().await?,
             _ => unreachable!(),
         };
-        assert_eq!(filtrate, b"1234");
+        assert_eq!(filtrate, b"1234".to_vec());
         Ok(())
     }
 }

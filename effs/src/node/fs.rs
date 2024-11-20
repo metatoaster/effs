@@ -1,3 +1,4 @@
+use bytes::Bytes;
 use indextree::NodeId;
 use fuse3::{
     raw::prelude::*,
@@ -95,7 +96,7 @@ impl Nodes {
         node_id: NodeId,
         offset: u64,
         size: u32,
-    ) -> Result<Vec<u8>> {
+    ) -> Result<Bytes> {
         let arena = &self.0;
         let node = &arena[node_id];
         let inner = node.get();
@@ -108,9 +109,9 @@ impl Nodes {
                 let r = f.filtrate()
                     .await
                     .map_err(|_| Errno::from(libc::EIO))?;
-                Ok(r[offset as usize..min(r.len(), (size as u64 + offset) as usize)].to_vec())
+                Ok(r.slice(offset as usize..min(r.len(), (size as u64 + offset) as usize)))
             }
-            Entry::Filtrated(r) => Ok(r[offset as usize..min(r.len(), (size as u64 + offset) as usize)].to_vec()),
+            Entry::Filtrated(r) => Ok(r.slice(offset as usize..min(r.len(), (size as u64 + offset) as usize))),
             Entry::PreciseFilter(f) => Ok(f.filtrate(offset, size)
                 .await
                 .map_err(|_| Errno::from(libc::EIO))?),

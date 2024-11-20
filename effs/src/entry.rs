@@ -1,3 +1,4 @@
+use bytes::Bytes;
 use std::{
     collections::BTreeMap,
     ffi::OsString,
@@ -19,7 +20,7 @@ pub enum Entry {
     /// future that will retrieve the entirety of some output on demand.
     Filter(Filter),
     /// A completely cached output through a filter.
-    Filtrated(Arc<[u8]>),
+    Filtrated(Bytes),
     /// A version of filter that can be precise about what to retrieve;
     /// rather than providing a future that will retrieve the entirety
     /// of the output, additional offset and size argument must be
@@ -33,8 +34,8 @@ impl From<Filter> for Entry {
     }
 }
 
-impl From<Arc<[u8]>> for Entry {
-    fn from(f: Arc<[u8]>) -> Self {
+impl From<Bytes> for Entry {
+    fn from(f: Bytes) -> Self {
         Self::Filtrated(f)
     }
 }

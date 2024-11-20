@@ -4,6 +4,7 @@ version = "0.0.1"
 edition = "2021"
 
 [dependencies]
+bytes = { workspace = true }
 fuse3 = { workspace = true, features = ["tokio-runtime", "unprivileged"] }
 futures-util = { workspace = true }
 indextree = { workspace = true }

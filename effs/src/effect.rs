@@ -45,7 +45,7 @@ impl Effect for Mirror {
                                             let mut file = File::open(&path)?;
                                             let mut output = Vec::new();
                                             file.read_to_end(&mut output)?;
-                                            Ok(output)
+                                            Ok(output.into())
                                         }
                                     )
                                 }))))
