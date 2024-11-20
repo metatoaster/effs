@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::filtrate::Filtrate;
+use crate::future::Filtrate;
 
 /// The standard filter, one where the full output will be produced
 #[derive(Clone)]
@@ -13,7 +13,8 @@ impl Filter {
         Self { inner: Arc::new(f) }
     }
 
-    pub fn get(&self) -> Filtrate {
+    // TODO this should be pub(crate)
+    pub fn filtrate(&self) -> Filtrate {
         (self.inner)()
     }
 }
@@ -30,7 +31,8 @@ impl PreciseFilter {
         Self { inner: Arc::new(f) }
     }
 
-    pub fn get(&self, offset: u64, size: u32) -> Filtrate {
+    // TODO this should be pub(crate)
+    pub fn filtrate(&self, offset: u64, size: u32) -> Filtrate {
         (self.inner)(offset, size)
     }
 }

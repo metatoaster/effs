@@ -37,7 +37,7 @@ pub struct Node {
     // this should be incremented by the arena for the replacement node at the same NodeId
     pub(crate) generation: u64,
 
-    pub(crate) size: u64,
+    pub(crate) size: Option<u64>,
     pub(crate) time: Timestamp,
     pub(crate) uid: u32,
     pub(crate) gid: u32,
@@ -49,16 +49,19 @@ pub struct Nodes(pub(crate) Arena<Node>);
 
 impl Node {
     pub fn link(&mut self, name: OsString, entry: Entry) {
-        self.mode = match entry {
-            Entry::Dir(_) => 0o755,
-            Entry::Filter(_) => 0o644,
-            Entry::Filtrated(_) => 0o644,
-            Entry::PreciseFilter(_) => 0o644,
+        let (mode, size) = match entry {
+            Entry::Dir(_) => (0o755, Some(0)),
+            Entry::Filter(_) => (0o644, None),
+            Entry::Filtrated(ref f) => (0o644, Some(f.len() as u64)),
+            Entry::PreciseFilter(_) => (0o644, None),
         };
+        self.name = name;
+
+        self.size = size.into();
         self.time = SystemTime::now().into();
         self.generation += 1;
         self.entry = Some(entry);
-        self.name = name;
+        self.mode = mode;
     }
 
     fn dir(&mut self) -> Option<&mut Dir> {
@@ -76,7 +79,7 @@ impl Default for Node {
             entry: None,
             generation: 0,
 
-            size: 0,
+            size: None,
             time: Timestamp::new(0, 0),
             gid: 0,
             uid: 0,

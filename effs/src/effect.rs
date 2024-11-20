@@ -13,7 +13,7 @@ use crate::{
     entry::Entry,
     error::EffectError,
     filter::Filter,
-    filtrate::Filtrate,
+    future::Filtrate,
     traits::Effect,
 };
 

@@ -2,7 +2,7 @@ use effs::{
     error::EffectError,
     entry::Entry,
     filter::Filter,
-    filtrate::Filtrate,
+    future::Filtrate,
     source::Source,
     traits::{
         Effect,
@@ -94,7 +94,7 @@ mod test {
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].0, PathBuf::from("source"));
         let filtrate = match &result[0].1 {
-            Entry::Filter(filter) => filter.get().await?,
+            Entry::Filter(filter) => filter.filtrate().await?,
             _ => unreachable!(),
         };
         assert_eq!(filtrate, b"1234");

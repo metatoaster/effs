@@ -64,7 +64,8 @@ impl Nodes {
         };
         handler((inner, FileAttr {
             ino: Into::<usize>::into(node_id) as u64,  // FIXME change to usize::from when possible
-            size: 0,
+            size: inner.size
+                .unwrap_or(0),
             blocks: 0,
             atime: inner.time,
             mtime: inner.time,
@@ -104,13 +105,13 @@ impl Nodes {
         {
             Entry::Dir(_) => Err(Errno::from(libc::ENOTDIR)),
             Entry::Filter(f) => {
-                let r = f.get()
+                let r = f.filtrate()
                     .await
                     .map_err(|_| Errno::from(libc::EIO))?;
                 Ok(r[offset as usize..min(r.len(), (size as u64 + offset) as usize)].to_vec())
             }
             Entry::Filtrated(r) => Ok(r[offset as usize..min(r.len(), (size as u64 + offset) as usize)].to_vec()),
-            Entry::PreciseFilter(f) => Ok(f.get(offset, size)
+            Entry::PreciseFilter(f) => Ok(f.filtrate(offset, size)
                 .await
                 .map_err(|_| Errno::from(libc::EIO))?),
         }
