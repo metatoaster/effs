@@ -105,7 +105,7 @@ impl Nodes {
                 let child_node_id = self.new_node();
                 node_id.append(child_node_id, &mut self.0);
                 let node = &mut self[node_id];
-                let dir = node.get_mut().dir()
+                let dir = node.dir()
                     .expect("NoSuchName implies entry at node_id is a dir");
                 dir.insert(name.clone(), Into::<usize>::into(child_node_id) as u64);
                 child_node_id
@@ -113,14 +113,14 @@ impl Nodes {
             Err(e) => return Err(e),
         };
 
-        self[child_node_id].get_mut().link(name, entry);
+        self[child_node_id].link(name, entry);
         Ok(())
     }
 
     pub(crate) fn path_of_inode(&self, inode: u64) -> Result<PathBuf, NoSuchNode> {
         let node_id = self.basic_node_id(inode)?;
         Ok(node_id.ancestors(&self.0)
-            .map(|nid| &self[nid].get().name)
+            .map(|nid| &self[nid].name)
             .collect::<Vec<_>>()
             .into_iter()
             .rev()
@@ -143,7 +143,7 @@ impl Nodes {
         name: &OsStr,
     ) -> Result<NodeId, NodeLookupError> {
         let node = &self[node_id];
-        let inner = node.get();
+        let inner = node;
         let dir = match inner.entry
             .as_ref()
             .ok_or_else(|| NodeLookupError::NoEntry(
@@ -177,8 +177,8 @@ impl Default for Nodes {
     fn default() -> Self {
         let mut arena = Arena::new();
         let root = arena.new_node(Node::default());
-        let node = &mut arena[root];
-        node.get_mut().link(OsString::new(), Entry::Dir(BTreeMap::new()));
+        let node = &mut arena[root].get_mut();
+        node.link(OsString::new(), Entry::Dir(BTreeMap::new()));
 
         // `FUSE_ROOT_ID` is defined as 1
         let node_id: usize = root.into();
@@ -187,16 +187,15 @@ impl Default for Nodes {
     }
 }
 
-// TODO look into how this might convert to Node directly instead
 impl Index<NodeId> for Nodes {
-    type Output = indextree::Node<Node>;
+    type Output = Node;
     fn index(&self, node: NodeId) -> &Self::Output {
-        &self.0[node]
+        &self.0[node].get()
     }
 }
 
 impl IndexMut<NodeId> for Nodes {
-    fn index_mut(&mut self, node: NodeId) -> &mut indextree::Node<Node> {
-        &mut self.0[node]
+    fn index_mut(&mut self, node: NodeId) -> &mut Node {
+        (&mut self.0[node]).get_mut()
     }
 }
